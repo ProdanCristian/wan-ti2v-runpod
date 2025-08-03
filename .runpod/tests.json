@@ -1,0 +1,56 @@
+{
+  "tests": [
+    {
+      "name": "test_video_generation",
+      "input": {
+        "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+        "prompt": "A serene landscape with flowing water",
+        "num_frames": 12,
+        "fps": 24
+      },
+      "timeout": 60000
+    },
+    {
+      "name": "test_longer_video",
+      "input": {
+        "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+        "prompt": "Dynamic movement of clouds across the sky",
+        "num_frames": 24,
+        "fps": 24
+      },
+      "timeout": 120000
+    }
+  ],
+  "config": {
+    "gpuTypeId": "NVIDIA GeForce RTX 4090",
+    "gpuCount": 1,
+    "env": [
+      {
+        "key": "TORCH_HOME",
+        "value": "/tmp/torch_cache"
+      },
+      {
+        "key": "HF_HOME",
+        "value": "/tmp/hf_cache"
+      },
+      {
+        "key": "CUDA_VISIBLE_DEVICES",
+        "value": "0"
+      },
+      {
+        "key": "PYTHONUNBUFFERED",
+        "value": "1"
+      }
+    ],
+    "allowedCudaVersions": [
+      "12.7",
+      "12.6",
+      "12.5",
+      "12.4",
+      "12.3",
+      "12.2",
+      "12.1",
+      "12.0"
+    ]
+  }
+}

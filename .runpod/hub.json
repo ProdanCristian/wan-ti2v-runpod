@@ -1,0 +1,79 @@
+{
+  "title": "Wan Ti2v Runpod",
+  "description": "AI-powered text-to-video generation using Wan2.2-TI2V-5B model. Convert images into dynamic videos with text prompts for enhanced storytelling and content creation.",
+  "type": "serverless",
+  "category": "video",
+  "iconUrl": "https://example.com/icon.png",
+  "config": {
+    "runsOn": "GPU",
+    "containerDiskInGb": 20,
+    "presets": [
+      {
+        "name": "Standard Video Generation",
+        "defaults": {
+          "num_frames": "24",
+          "fps": "24"
+        }
+      },
+      {
+        "name": "Short Video",
+        "defaults": {
+          "num_frames": "12",
+          "fps": "24"
+        }
+      },
+      {
+        "name": "Long Video",
+        "defaults": {
+          "num_frames": "48",
+          "fps": "24"
+        }
+      }
+    ],
+    "env": [
+      {
+        "key": "TORCH_HOME",
+        "value": "/tmp/torch_cache"
+      },
+      {
+        "key": "HF_HOME",
+        "value": "/tmp/hf_cache"
+      },
+      {
+        "key": "CUDA_VISIBLE_DEVICES",
+        "value": "0"
+      },
+      {
+        "key": "PYTHONUNBUFFERED",
+        "value": "1"
+      },
+      {
+        "key": "prompt",
+        "input": {
+          "name": "Video Prompt",
+          "type": "string",
+          "description": "Text description of the video you want to generate",
+          "default": "A person walking through a beautiful garden"
+        }
+      },
+      {
+        "key": "num_frames",
+        "input": {
+          "name": "Number of Frames",
+          "type": "string",
+          "description": "Number of frames to generate (default: 24)",
+          "default": "24"
+        }
+      },
+      {
+        "key": "fps",
+        "input": {
+          "name": "Frames Per Second",
+          "type": "string",
+          "description": "Video frame rate (default: 24)",
+          "default": "24"
+        }
+      }
+    ]
+  }
+}
