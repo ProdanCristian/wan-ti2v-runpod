@@ -29,11 +29,11 @@ RUN echo "🐍 Starting Python dependencies installation..." && \
     echo "📦 Installing RunPod SDK..." && \
     pip install --no-cache-dir --verbose runpod && \
     echo "🔥 Installing PyTorch..." && \
-    pip install --no-cache-dir --verbose torch==2.1.0 && \
+    pip install --no-cache-dir --verbose "torch>=2.2.0" && \
     echo "🤗 Installing Transformers and Diffusers..." && \
     pip install --no-cache-dir --verbose transformers diffusers && \
     echo "⚡ Installing additional dependencies..." && \
-    pip install --no-cache-dir --verbose accelerate safetensors Pillow torchvision && \
+    pip install --no-cache-dir --verbose accelerate safetensors Pillow torchvision psutil && \
     echo "✅ All Python dependencies installed successfully!"
 
 # Copy handler file

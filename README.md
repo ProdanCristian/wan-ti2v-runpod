@@ -1,6 +1,6 @@
 # Wan Ti2v Runpod
 
-[![Runpod](https://api.runpod.io/badge/ProdanCristian/wan-ti2v-runpod)](https://console.runpod.io/hub/ProdanCristian/wan-ti2v-runpod)
+[![Runpod](https://api.runpod.io/badge/ProdanCristian/worker-runpod)](https://console.runpod.io/hub/ProdanCristian/worker-runpod)
 
 AI-powered text-to-video generation using the Wan2.2-TI2V-5B model. Convert images into dynamic videos with text prompts for enhanced storytelling and content creation.
 

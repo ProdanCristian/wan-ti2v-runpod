@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: prodancristian/wan-ti2v-runpod
+  IMAGE_NAME: prodancristian/worker-runpod
 
 jobs:
   build:
