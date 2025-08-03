@@ -94,8 +94,11 @@ def handler(event):
     Returns:
         dict: Response containing the generated video or error
     """
+    request_start_time = time.time()
+    request_id = event.get('id', 'unknown')
+    
     try:
-        print("Processing video generation request...")
+        logger.info(f"🎬 [{request_id}] Processing video generation request...")
         
         # Extract input data from RunPod event structure
         input_data = event.get('input', {})
@@ -107,23 +110,43 @@ def handler(event):
         fps = input_data.get('fps', 24)
         
         if not image_b64:
+            logger.error(f"❌ [{request_id}] Missing required 'image' parameter")
             return {"error": "Missing required 'image' parameter"}
         
-        print(f"Prompt: {prompt}")
-        print(f"Frames: {num_frames}, FPS: {fps}")
+        logger.info(f"📝 [{request_id}] Request details:")
+        logger.info(f"   Prompt: {prompt}")
+        logger.info(f"   Frames: {num_frames}, FPS: {fps}")
         
         # Decode the base64 image
+        logger.info(f"🖼️  [{request_id}] Decoding input image...")
+        decode_start = time.time()
         image_bytes = base64.b64decode(image_b64)
         image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-        print(f"Image loaded: {image.size}")
+        decode_time = time.time() - decode_start
+        logger.info(f"   Image loaded: {image.size} in {decode_time:.2f}s")
+
+        # Log memory before inference
+        if torch.cuda.is_available():
+            memory_before = torch.cuda.memory_allocated(0) / 1024**3
+            logger.info(f"💾 [{request_id}] CUDA memory before inference: {memory_before:.1f} GB")
 
         # Run inference
-        print("Running model inference...")
+        logger.info(f"🚀 [{request_id}] Starting model inference...")
+        inference_start = time.time()
         result = pipe(image, prompt=prompt, num_frames=num_frames)
         video_tensor = result["video"]
-        print("Video generation completed!")
+        inference_time = time.time() - inference_start
+        logger.info(f"✅ [{request_id}] Video generation completed in {inference_time:.1f}s!")
+
+        # Log memory after inference
+        if torch.cuda.is_available():
+            memory_after = torch.cuda.memory_allocated(0) / 1024**3
+            logger.info(f"💾 [{request_id}] CUDA memory after inference: {memory_after:.1f} GB")
 
         # Convert to video file in-memory
+        logger.info(f"🎞️  [{request_id}] Converting tensor to video file...")
+        encode_start = time.time()
+        
         with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
             video_path = tmp.name
             write_video(video_path, video_tensor, fps=fps)
@@ -134,17 +157,44 @@ def handler(event):
         # Clean up temporary file
         os.remove(video_path)
         
+        encode_time = time.time() - encode_start
+        total_time = time.time() - request_start_time
+        
+        logger.info(f"📦 [{request_id}] Video encoding completed in {encode_time:.2f}s")
+        logger.info(f"⏱️  [{request_id}] Total request time: {total_time:.1f}s")
+        
+        # Clear CUDA cache
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        
         return {
             "video": video_b64,
             "status": "success",
             "num_frames": num_frames,
             "fps": fps,
-            "prompt": prompt
+            "prompt": prompt,
+            "processing_time": {
+                "decode_time": decode_time,
+                "inference_time": inference_time,
+                "encode_time": encode_time,
+                "total_time": total_time
+            }
         }
 
     except Exception as e:
-        print(f"Error during processing: {str(e)}")
-        return {"error": str(e)}
+        total_time = time.time() - request_start_time
+        logger.error(f"❌ [{request_id}] Error during processing after {total_time:.1f}s: {str(e)}")
+        logger.error(f"   Error type: {type(e).__name__}")
+        
+        # Clear CUDA cache on error
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            
+        return {
+            "error": str(e),
+            "error_type": type(e).__name__,
+            "processing_time": total_time
+        }
 
 # Start the RunPod serverless function
 if __name__ == '__main__':
