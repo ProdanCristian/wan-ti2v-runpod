@@ -1,8 +1,0 @@
-{
-    "input": {
-        "image": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
-        "prompt": "A beautiful cinematic scene with gentle movement and smooth transitions",
-        "num_frames": 24,
-        "fps": 24
-    }
-}
