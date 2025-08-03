@@ -7,16 +7,72 @@ import base64
 import io
 import tempfile
 import os
+import time
+import logging
 from torchvision.io import write_video
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
+
+def log_system_info():
+    """Log system information for debugging"""
+    logger.info("🖥️  System Information:")
+    logger.info(f"   Python version: {torch.__version__}")
+    logger.info(f"   PyTorch version: {torch.__version__}")
+    logger.info(f"   CUDA available: {torch.cuda.is_available()}")
+    if torch.cuda.is_available():
+        logger.info(f"   CUDA device count: {torch.cuda.device_count()}")
+        logger.info(f"   CUDA device name: {torch.cuda.get_device_name(0)}")
+        logger.info(f"   CUDA memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
+    
+    # Log memory usage
+    try:
+        import psutil
+        memory = psutil.virtual_memory()
+        logger.info(f"   System RAM: {memory.total / 1024**3:.1f} GB")
+        logger.info(f"   Available RAM: {memory.available / 1024**3:.1f} GB")
+    except ImportError:
+        logger.info("   psutil not available for memory info")
+
+# Log startup information
+logger.info("🚀 Starting Wan2.2-TI2V-5B RunPod Handler")
+log_system_info()
+
 # Load model once on cold start
-print("Loading Wan2.2-TI2V-5B model...")
-pipe = DiffusionPipeline.from_pretrained(
-    "Wan-AI/Wan2.2-TI2V-5B",
-    torch_dtype=torch.float16,
-    variant="fp16"
-).to("cuda")
-print("Model loaded successfully!")
+logger.info("📥 Starting model download and loading...")
+start_time = time.time()
+
+try:
+    logger.info("   Downloading model from Hugging Face...")
+    pipe = DiffusionPipeline.from_pretrained(
+        "Wan-AI/Wan2.2-TI2V-5B",
+        torch_dtype=torch.float16,
+        variant="fp16"
+    )
+    
+    logger.info("   Moving model to CUDA...")
+    pipe = pipe.to("cuda")
+    
+    load_time = time.time() - start_time
+    logger.info(f"✅ Model loaded successfully in {load_time:.1f} seconds!")
+    
+    # Log memory usage after model loading
+    if torch.cuda.is_available():
+        memory_allocated = torch.cuda.memory_allocated(0) / 1024**3
+        memory_reserved = torch.cuda.memory_reserved(0) / 1024**3
+        logger.info(f"   CUDA memory allocated: {memory_allocated:.1f} GB")
+        logger.info(f"   CUDA memory reserved: {memory_reserved:.1f} GB")
+        
+except Exception as e:
+    logger.error(f"❌ Failed to load model: {str(e)}")
+    raise e
+
+logger.info("🎬 Handler ready for video generation requests!")
 
 def handler(event):
     """
