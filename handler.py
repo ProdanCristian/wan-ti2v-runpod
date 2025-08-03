@@ -1,12 +1,14 @@
 import runpod
 import torch
-from diffusers import DiffusionPipeline
+from diffusers import WanPipeline, AutoencoderKLWan
+from diffusers.utils import export_to_video
 from PIL import Image
 import base64
 import io
 import tempfile
 import os
 import logging
+import numpy as np
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -20,11 +22,24 @@ def load_model():
     global pipe
     try:
         logger.info("Loading Wan2.2-TI2V-5B model...")
-        pipe = DiffusionPipeline.from_pretrained(
-            "Wan-AI/Wan2.2-TI2V-5B",
-            torch_dtype=torch.float16,
-            variant="fp16"
+        
+        # Use the Diffusers-compatible version
+        model_id = "Wan-AI/Wan2.2-TI2V-5B-Diffusers"
+        
+        # Load VAE separately with float32 for stability
+        vae = AutoencoderKLWan.from_pretrained(
+            model_id, 
+            subfolder="vae", 
+            torch_dtype=torch.float32
+        )
+        
+        # Load the main pipeline
+        pipe = WanPipeline.from_pretrained(
+            model_id,
+            vae=vae,
+            torch_dtype=torch.bfloat16
         ).to("cuda")
+        
         logger.info("Model loaded successfully!")
     except Exception as e:
         logger.error(f"Failed to load model: {str(e)}")
@@ -69,24 +84,42 @@ def handler(event):
         image_bytes = base64.b64decode(image_b64)
         image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         
+        # Set video parameters for 720P generation
+        height = 704
+        width = 1280
+        num_frames = min(num_frames, 121)  # Max supported frames
+        num_inference_steps = 50
+        guidance_scale = 5.0
+        
+        # Negative prompt for better quality
+        negative_prompt = "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走"
+        
         # Run inference
         logger.info("Running inference...")
         if prompt:
-            # If prompt is provided, use text + image
+            # Text + Image to Video
             result = pipe(
                 prompt=prompt,
                 image=image,
+                negative_prompt=negative_prompt,
+                height=height,
+                width=width,
                 num_frames=num_frames,
-                guidance_scale=7.5,
-                num_inference_steps=25
+                guidance_scale=guidance_scale,
+                num_inference_steps=num_inference_steps
             )
         else:
-            # Image-to-video only
+            # Image-to-video only (still need a prompt for this model)
+            default_prompt = "high quality, detailed, smooth motion"
             result = pipe(
+                prompt=default_prompt,
                 image=image,
+                negative_prompt=negative_prompt,
+                height=height,
+                width=width,
                 num_frames=num_frames,
-                guidance_scale=7.5,
-                num_inference_steps=25
+                guidance_scale=guidance_scale,
+                num_inference_steps=num_inference_steps
             )
         
         # Get video frames
@@ -97,11 +130,8 @@ def handler(event):
         with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp_file:
             video_path = tmp_file.name
             
-            # Use imageio to create video from frames
-            import imageio
-            with imageio.get_writer(video_path, fps=fps) as writer:
-                for frame in video_frames:
-                    writer.append_data(frame)
+            # Use diffusers export_to_video function
+            export_to_video(video_frames, video_path, fps=fps)
             
             # Read video file and encode as base64
             with open(video_path, "rb") as f:
